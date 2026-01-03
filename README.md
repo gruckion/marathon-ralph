@@ -27,7 +27,7 @@ Building a full application requires managing dozens of tasks, maintaining quali
 
 ```bash
 # 1. Start a marathon from your spec file
-/marathon-ralph:start app_spec.md
+/marathon-ralph:run app_spec.md
 
 # 2. Check progress anytime
 /marathon-ralph:status
@@ -107,8 +107,8 @@ claude mcp add --transport http linear https://mcp.linear.app/mcp
 
 | Command | Description |
 |---------|-------------|
-| `/marathon-ralph:start <spec-file>` | Start new marathon from spec |
-| `/marathon-ralph:start` | Resume existing marathon |
+| `/marathon-ralph:run <spec-file>` | Start new marathon from spec |
+| `/marathon-ralph:run` | Resume existing marathon |
 | `/marathon-ralph:status` | Show progress and current issue |
 | `/marathon-ralph:cancel` | Stop marathon (preserves Linear project) |
 
@@ -146,6 +146,15 @@ Marathon state is stored in `.claude/marathon-ralph.json`:
   "active": true,
   "phase": "coding",
   "session_id": "8a718ed2-2856-435b-bd9a-63c5b8291b42",
+  "project": {
+    "language": "node",
+    "packageManager": "bun",
+    "monorepo": { "type": "turbo", "workspaces": ["apps/*"] },
+    "commands": {
+      "test": "turbo run test",
+      "testWorkspace": "bun run --filter={workspace} test"
+    }
+  },
   "linear": {
     "project_name": "My Todo App",
     "total_issues": 18
@@ -157,6 +166,8 @@ Marathon state is stored in `.claude/marathon-ralph.json`:
   }
 }
 ```
+
+The `project` key caches detected project configuration (language, package manager, monorepo type, commands) so agents use the correct commands.
 
 Add `.claude/` to your `.gitignore`.
 
@@ -231,27 +242,32 @@ Then start fresh. Check Linear for actual progress.
 marathon-ralph/
 ├── agents/           # Specialized subagents
 │   ├── setup.md      # Verify Linear connection
-│   ├── init.md       # Create project + issues
+│   ├── init.md       # Create project + issues + detect project type
 │   ├── verify.md     # Run tests/lint/types
 │   ├── plan.md       # Create implementation plan
 │   ├── code.md       # Implement feature
 │   ├── test.md       # Write tests
-│   └── qa.md         # Write E2E tests
+│   ├── qa.md         # Write E2E tests
+│   └── exit.md       # Update state and Linear
 ├── commands/         # Slash commands
-│   ├── start.md
+│   ├── run.md
 │   ├── status.md
 │   └── cancel.md
 ├── hooks/            # Stop hook for continuous operation
-└── skills/           # Natural language triggers
+└── skills/           # Reusable capabilities
+    ├── project-detection/  # Detect language, package manager, monorepo
+    ├── setup-vitest/       # Configure Vitest testing
+    ├── setup-playwright/   # Configure E2E testing
+    └── ...
 ```
 
 ### Agent Models
 
 | Agent | Model | Purpose |
 |-------|-------|---------|
-| setup | haiku | Fast environment checks |
-| init | opus | Complex spec analysis |
-| verify, plan, code, test, qa | sonnet | Implementation work |
+| setup, exit | haiku | Fast checks and state updates |
+| init, plan, code, test, qa | opus | Complex analysis and implementation |
+| verify | sonnet | Verification checks |
 
 ---
 
