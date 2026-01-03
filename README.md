@@ -79,15 +79,11 @@ See `examples/` for full spec files. Marathon Ralph reads the spec, creates Line
 
 ## Installation
 
-```bash
-# Clone the plugin
-git clone https://github.com/gruckion/marathon-ralph.git
-
-# Run Claude Code with the plugin
-claude --plugin-dir ./marathon-ralph
-```
-
-Or add to `~/.claude/plugins/` for persistent use.
+1. Run `/plugin` in Claude Code
+2. Go to **Marketplaces** tab
+3. Select **+ Add Marketplace**
+4. Enter `gruckion/marathon-ralph`
+5. Go to **Discover** tab and install the plugin
 
 ## Prerequisites
 
