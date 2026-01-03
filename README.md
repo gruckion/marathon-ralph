@@ -15,6 +15,14 @@ Building a full application requires managing dozens of tasks, maintaining quali
 - **No skipped tests** — Every feature gets unit, integration, and E2E tests
 - **No broken builds** — Verification runs before each new feature
 
+## Installation
+
+1. Run `/plugin` in Claude Code
+2. Go to **Marketplaces** tab
+3. Select **+ Add Marketplace**
+4. Enter `gruckion/marathon-ralph`
+5. Go to **Discover** tab and install the plugin
+
 ## Quick Start
 
 ```bash
@@ -76,14 +84,6 @@ That's it. The marathon runs autonomously until all issues are complete.
 ```
 
 See `examples/` for full spec files. Marathon Ralph reads the spec, creates Linear issues, and implements each one with full test coverage.
-
-## Installation
-
-1. Run `/plugin` in Claude Code
-2. Go to **Marketplaces** tab
-3. Select **+ Add Marketplace**
-4. Enter `gruckion/marathon-ralph`
-5. Go to **Discover** tab and install the plugin
 
 ## Prerequisites
 
