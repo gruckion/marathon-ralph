@@ -32,37 +32,50 @@ That's it. The marathon runs autonomously until all issues are complete.
 
 ## Example Spec File
 
-```markdown
-# My Todo Application
+```xml
+<project_specification>
+  <project_name>Simple Todo App</project_name>
+  <project_directory>simple-todo-app</project_directory>
 
-## Overview
-A todo app with authentication, task management, and team collaboration.
+  <overview>
+    A minimal todo application with basic CRUD functionality.
+  </overview>
 
-## Tech Stack
-- Frontend: Next.js 14 with App Router
-- Styling: Tailwind CSS
-- Database: PostgreSQL with Prisma
-- Auth: NextAuth.js
+  <technology_stack>
+    <frontend>Next.js 15, Tailwind CSS, shadcn/ui</frontend>
+    <backend>oRPC, Drizzle ORM, SQLite</backend>
+  </technology_stack>
 
-## Features
+  <database_schema>
+    <todos_table>
+      - id: text (primary key)
+      - text: text (required)
+      - completed: integer (0 or 1)
+    </todos_table>
+  </database_schema>
 
-### Authentication
-- Email/password sign up and sign in
-- OAuth with Google and GitHub
-- Password reset via email
+  <api_endpoints>
+    - todo.getAll: Get all todos
+    - todo.create: Create todo
+    - todo.delete: Delete todo
+    - todo.toggle: Toggle completion
+  </api_endpoints>
 
-### Task Management
-- Create, read, update, delete tasks
-- Task properties: title, description, due date, priority
-- Filter and search tasks
+  <implementation_steps>
+    <step number="1">Setup and Database</step>
+    <step number="2">API Routes</step>
+    <step number="3">UI Implementation</step>
+  </implementation_steps>
 
-### Team Collaboration
-- Create and manage teams
-- Invite members via email
-- Shared task lists
+  <success_criteria>
+    - Can add, toggle, delete todos
+    - Data persists in SQLite
+    - No TypeScript errors
+  </success_criteria>
+</project_specification>
 ```
 
-Marathon Ralph reads this spec, creates ~15-25 Linear issues (depending on complexity), and implements each one with full test coverage.
+See `examples/` for full spec files. Marathon Ralph reads the spec, creates Linear issues, and implements each one with full test coverage.
 
 ## Installation
 
