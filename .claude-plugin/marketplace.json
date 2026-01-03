@@ -1,0 +1,19 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "marathon-ralph",
+  "version": "1.0.0",
+  "description": "Persistent marathon development sessions for Linear issues",
+  "owner": {
+    "name": "gruckion",
+    "email": ""
+  },
+  "plugins": [
+    {
+      "name": "marathon-ralph",
+      "description": "Persistent marathon development sessions for Linear issues - continue working on the same task across multiple Claude sessions with automatic state management and progress tracking",
+      "version": "1.0.0",
+      "source": "./",
+      "category": "productivity"
+    }
+  ]
+}

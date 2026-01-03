@@ -1,0 +1,23 @@
+{
+  "name": "marathon-ralph",
+  "version": "1.0.0",
+  "description": "Persistent marathon development sessions for Linear issues - continue working on the same task across multiple Claude sessions with automatic state management and progress tracking.",
+  "keywords": [
+    "linear",
+    "marathon",
+    "persistent",
+    "state-management",
+    "productivity",
+    "ralph wiggum"
+  ],
+  "author": {
+    "name": "gruckion",
+    "email": ""
+  },
+  "mcpServers": {
+    "linear": {
+      "type": "http",
+      "url": "https://mcp.linear.app/mcp"
+    }
+  }
+}

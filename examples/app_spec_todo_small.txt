@@ -1,0 +1,88 @@
+<project_specification>
+  <project_name>Simple Todo App</project_name>
+  <project_directory>simple-todo-app</project_directory>
+
+  <overview>
+    A minimal todo application with basic CRUD functionality. Create, read, update, delete, and toggle todos.
+    Built as a Turborepo monorepo with Next.js 15, oRPC, Drizzle ORM with SQLite, and shadcn/ui.
+  </overview>
+
+  <technology_stack>
+    <monorepo>Turborepo with Bun (use `ni` commands)</monorepo>
+    <frontend>Next.js 15 (App Router), Tailwind CSS, shadcn/ui, TanStack Query</frontend>
+    <backend>oRPC API routes, Drizzle ORM, SQLite</backend>
+    <tooling>Biome, TypeScript strict mode</tooling>
+  </technology_stack>
+
+  <project_initialization>
+    ```bash
+    bun create better-t-stack@latest simple-todo-app --frontend next --backend self --runtime none --api orpc --auth none --payments none --database sqlite --orm drizzle --db-setup none --package-manager bun --git --web-deploy none --server-deploy none --install --addons biome turborepo --examples none
+    ```
+  </project_initialization>
+
+  <database_schema>
+    <todos_table>
+      - id: text (primary key, UUID)
+      - text: text (required)
+      - completed: integer (0 or 1, default 0)
+      - createdAt: text (ISO timestamp)
+    </todos_table>
+  </database_schema>
+
+  <api_endpoints>
+    - todo.getAll: Get all todos
+    - todo.create: Create todo (text required)
+    - todo.update: Update todo text
+    - todo.delete: Delete todo by ID
+    - todo.toggle: Toggle completion status
+  </api_endpoints>
+
+  <ui_components>
+    - Single page layout with centered content
+    - Input field + Add button at top
+    - Todo list below showing all items
+    - Each todo: checkbox, text, delete button
+    - Completed todos show strikethrough
+    - Empty state when no todos
+  </ui_components>
+
+  <implementation_steps>
+    <step number="1">
+      <title>Setup and Database</title>
+      - Initialize with better-t-stack CLI
+      - Create todos table schema in packages/db
+      - Run migration
+    </step>
+
+    <step number="2">
+      <title>API Routes</title>
+      - Create todo router with all CRUD endpoints
+      - Add Zod validation for inputs
+    </step>
+
+    <step number="3">
+      <title>UI Implementation</title>
+      - Set up oRPC client and TanStack Query
+      - Create TodoList component
+      - Create TodoItem component
+      - Add input form for new todos
+      - Wire up all mutations
+    </step>
+
+    <step number="4">
+      <title>Polish</title>
+      - Add loading states
+      - Add toast notifications
+      - Run Biome and fix errors
+    </step>
+  </implementation_steps>
+
+  <success_criteria>
+    - Can add new todos
+    - Can toggle todo completion
+    - Can delete todos
+    - Data persists in SQLite
+    - No TypeScript errors
+    - Biome passes
+  </success_criteria>
+</project_specification>

@@ -1,0 +1,16 @@
+# OS files
+.DS_Store
+
+# Runtime state files
+.claude/
+
+# Agent-generated output directories
+generations/
+
+# Log files
+logs/
+
+# Environment and Python
+.env
+venv
+__pycache__

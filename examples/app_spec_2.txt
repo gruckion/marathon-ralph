@@ -1,0 +1,678 @@
+<project_specification>
+  <project_name>Todo Application 2 - Full-Featured Task Manager</project_name>
+  <project_directory>todo-app-2</project_directory>
+
+  <overview>
+    Build a comprehensive, full-featured todo application with categories, priorities, due dates, and
+    productivity tracking. The application should provide a clean, modern interface for managing tasks
+    across multiple categories with powerful filtering, search, and organizational features. Built as a
+    Turborepo monorepo with Next.js 15, oRPC for type-safe APIs, Drizzle ORM with SQLite, and shadcn/ui
+    components. The focus is on excellent user experience, responsive design, and type-safety from
+    database to frontend.
+  </overview>
+
+  <technology_stack>
+    <monorepo>
+      <tool>Turborepo</tool>
+      <package_manager>Bun (use `ni` commands for package operations)</package_manager>
+      <workspace_structure>apps/* and packages/*</workspace_structure>
+    </monorepo>
+    <frontend>
+      <framework>Next.js 15 (App Router)</framework>
+      <styling>Tailwind CSS</styling>
+      <ui_components>shadcn/ui (Card, Button, Input, Checkbox, Dialog, etc.)</ui_components>
+      <state_management>TanStack Query (React Query)</state_management>
+      <icons>Lucide React</icons>
+      <forms>React Hook Form with Zod validation</forms>
+    </frontend>
+    <backend>
+      <runtime>Self-hosted within Next.js (API routes)</runtime>
+      <api>oRPC (type-safe RPC, NOT tRPC)</api>
+      <database>SQLite (local file)</database>
+      <orm>Drizzle ORM</orm>
+    </backend>
+    <tooling>
+      <linting>Biome</linting>
+      <formatting>Biome</formatting>
+      <type_checking>TypeScript strict mode</type_checking>
+    </tooling>
+    <communication>
+      <api>oRPC routers with type-safe procedures</api>
+      <client>oRPC React client with TanStack Query integration</client>
+    </communication>
+  </technology_stack>
+
+  <prerequisites>
+    <environment_setup>
+      - Bun installed globally (bun.sh)
+      - Node.js 18+ for Next.js compatibility
+      - Git for version control
+    </environment_setup>
+    <project_initialization>
+      Initialize the project using better-t-stack CLI:
+      ```bash
+      bun create better-t-stack@latest todo-app-2 --frontend next --backend self --runtime none --api orpc --auth none --payments none --database sqlite --orm drizzle --db-setup none --package-manager bun --git --web-deploy none --server-deploy none --install --addons biome turborepo --examples none
+      ```
+    </project_initialization>
+    <project_structure>
+      ```
+      todo-app-2/
+      ├── apps/
+      │   └── web/                    # Next.js frontend + API routes
+      │       └── src/
+      │           ├── app/            # App Router pages
+      │           │   ├── api/rpc/    # oRPC API handler
+      │           │   └── todos/      # Todo pages
+      │           ├── components/     # React components
+      │           │   └── ui/         # shadcn/ui components
+      │           ├── utils/          # oRPC client setup
+      │           └── lib/            # Utilities
+      ├── packages/
+      │   ├── api/                    # oRPC routers and procedures
+      │   │   └── src/
+      │   │       ├── routers/        # Feature routers (todo.ts, category.ts, etc.)
+      │   │       ├── context.ts      # Request context
+      │   │       └── index.ts        # Public procedure exports
+      │   ├── db/                     # Drizzle database package
+      │   │   └── src/
+      │   │       ├── schema/         # Drizzle table definitions
+      │   │       └── index.ts        # Database connection
+      │   └── env/                    # Environment variable validation
+      ├── turbo.json                  # Turborepo config
+      ├── biome.json                  # Biome linting/formatting
+      └── package.json                # Root workspace config
+      ```
+    </project_structure>
+  </prerequisites>
+
+  <core_features>
+    <todo_management>
+      - Create new todos with text, description, priority, and due date
+      - Read/display todos in a clean list view
+      - Update todo text, description, priority, due date, and category
+      - Delete todos with confirmation dialog
+      - Toggle todo completion status (mark complete/incomplete)
+      - Due dates with date picker component (shadcn/ui Calendar)
+      - Priority levels: Low, Medium, High, Urgent (color-coded badges)
+      - Optional longer description field for detailed notes
+      - Drag-and-drop reordering within lists
+      - Bulk actions: complete all visible, delete all completed
+      - Inline editing for quick text updates
+      - Created and updated timestamps displayed
+    </todo_management>
+
+    <categories_lists>
+      - Create multiple todo lists/categories
+      - Default "Inbox" category that cannot be deleted
+      - Custom category names with color picker
+      - Color-coded category badges (8 preset colors)
+      - Move todos between categories via dropdown or drag-and-drop
+      - Category-specific views (filter by single category)
+      - Category reordering via drag-and-drop
+      - Edit category name and color
+      - Delete category (with option to move todos to Inbox or delete)
+      - Todo count displayed per category in sidebar
+    </categories_lists>
+
+    <filtering_search>
+      - Filter by status: All, Active (incomplete), Completed
+      - Filter by priority: All, Low, Medium, High, Urgent
+      - Filter by category: All or specific category
+      - Filter by due date: All, Today, Upcoming (next 7 days), Overdue, No date
+      - Combined filters (status + priority + category + due date)
+      - Search todos by text content (title and description)
+      - Real-time search with debouncing (300ms)
+      - Sort options: Date created, Due date, Priority, Alphabetical
+      - Sort direction: Ascending/Descending toggle
+      - Clear all filters button
+      - Filter state persisted in URL params
+    </filtering_search>
+
+    <ui_features>
+      - Responsive design (mobile-first approach)
+      - Desktop: sidebar + main content layout
+      - Tablet: collapsible sidebar
+      - Mobile: bottom navigation or hamburger menu
+      - Dark/Light theme toggle with system preference detection
+      - Theme persisted in localStorage
+      - Keyboard shortcuts:
+        - n: New todo
+        - /: Focus search
+        - Escape: Close modals/clear search
+        - Enter: Save/confirm
+        - Delete/Backspace: Delete selected (with confirmation)
+      - Toast notifications for all actions (success, error)
+      - Loading states with skeleton loaders
+      - Empty states with helpful messages and action buttons
+      - Confirmation dialogs for destructive actions
+      - Optimistic updates for better perceived performance
+      - Error boundary with retry option
+    </ui_features>
+
+    <statistics_dashboard>
+      - Total todos count
+      - Completed vs pending breakdown (with percentages)
+      - Todos by category (bar chart or list)
+      - Todos by priority distribution
+      - Overdue todos count (highlighted in red)
+      - Completion rate (last 7 days, last 30 days)
+      - Daily completed count for productivity streak
+      - Weekly completion chart (simple bar chart)
+      - Most productive day of week
+      - Average todos completed per day
+    </statistics_dashboard>
+
+    <accessibility>
+      - Full keyboard navigation
+      - ARIA labels on all interactive elements
+      - Focus management for modals and dialogs
+      - Screen reader friendly announcements
+      - Sufficient color contrast (WCAG AA)
+      - Reduced motion support (prefers-reduced-motion)
+      - Focus visible indicators
+    </accessibility>
+  </core_features>
+
+  <database_schema>
+    <tables>
+      <todos>
+        - id: text (primary key, UUID)
+        - text: text (required, todo title)
+        - description: text (optional, longer notes)
+        - completed: integer (0 or 1, default 0)
+        - priority: text (enum: 'low', 'medium', 'high', 'urgent', default 'medium')
+        - dueDate: text (ISO date string, nullable)
+        - categoryId: text (foreign key to categories.id, nullable, defaults to Inbox)
+        - position: integer (for ordering within category)
+        - createdAt: text (ISO timestamp, default now)
+        - updatedAt: text (ISO timestamp, updated on change)
+      </todos>
+
+      <categories>
+        - id: text (primary key, UUID)
+        - name: text (required, unique)
+        - color: text (hex color code, e.g., '#3B82F6')
+        - position: integer (for ordering in sidebar)
+        - isDefault: integer (0 or 1, true for Inbox)
+        - createdAt: text (ISO timestamp)
+      </categories>
+
+      <daily_stats>
+        - id: text (primary key, UUID)
+        - date: text (ISO date, unique, YYYY-MM-DD format)
+        - completedCount: integer (todos marked complete that day)
+        - createdCount: integer (todos created that day)
+        - updatedAt: text (ISO timestamp)
+      </daily_stats>
+    </tables>
+
+    <indexes>
+      - todos: categoryId, completed, priority, dueDate, position
+      - categories: position, isDefault
+      - daily_stats: date (unique)
+    </indexes>
+
+    <seed_data>
+      - Create default "Inbox" category with isDefault=true
+      - Optionally seed sample todos for development
+    </seed_data>
+  </database_schema>
+
+  <api_endpoints_summary>
+    <todo_router>
+      - todo.getAll: Get all todos with optional filters (status, priority, categoryId, dueDate, search, sort)
+      - todo.getById: Get single todo by ID
+      - todo.create: Create new todo (text required, optional: description, priority, dueDate, categoryId)
+      - todo.update: Update todo fields (partial update supported)
+      - todo.delete: Delete todo by ID
+      - todo.toggle: Toggle completion status by ID
+      - todo.reorder: Update position for drag-and-drop (accepts array of {id, position})
+      - todo.bulkComplete: Mark multiple todos as complete
+      - todo.bulkDelete: Delete multiple todos (typically completed ones)
+      - todo.moveToCategory: Move todo to different category
+    </todo_router>
+
+    <category_router>
+      - category.getAll: Get all categories ordered by position
+      - category.getById: Get single category by ID
+      - category.create: Create new category (name, color required)
+      - category.update: Update category name or color
+      - category.delete: Delete category (with strategy: move todos to Inbox or delete)
+      - category.reorder: Update positions for drag-and-drop
+    </category_router>
+
+    <stats_router>
+      - stats.getDashboard: Get overview stats (totals, by priority, by category, overdue count)
+      - stats.getWeekly: Get last 7 days completion data for chart
+      - stats.getMonthly: Get last 30 days aggregated stats
+      - stats.recordCompletion: Called internally when todo is completed (updates daily_stats)
+    </stats_router>
+  </api_endpoints_summary>
+
+  <ui_layout>
+    <main_structure>
+      - Two-column layout on desktop: sidebar (categories) + main content (todos)
+      - Collapsible sidebar with toggle button
+      - Responsive: single column on mobile with bottom nav or hamburger
+      - Sticky header with app title, theme toggle, and new todo button
+      - Main content area with filters bar and todo list
+    </main_structure>
+
+    <sidebar>
+      - App logo/title at top
+      - "All Todos" item (shows all regardless of category)
+      - Category list with color indicators and todo counts
+      - "Add Category" button at bottom
+      - Each category has edit/delete actions on hover
+      - Active category highlighted
+      - Collapsible on tablet/mobile
+    </sidebar>
+
+    <main_content>
+      <header>
+        - Current view title (category name or "All Todos")
+        - Search input (expandable on mobile)
+        - Filter dropdowns (status, priority, due date)
+        - Sort dropdown
+        - "New Todo" button (primary action)
+      </header>
+
+      <todo_list>
+        - Todo items in card or list format
+        - Each item shows: checkbox, title, priority badge, due date, category tag
+        - Hover reveals edit/delete actions
+        - Click to expand and see description
+        - Drag handle for reordering
+        - Empty state when no todos match filters
+      </todo_list>
+
+      <bulk_actions_bar>
+        - Appears when todos exist
+        - "Complete All" button
+        - "Delete Completed" button
+        - Shows count of selected/filtered items
+      </bulk_actions_bar>
+    </main_content>
+
+    <modals_dialogs>
+      - New/Edit Todo Dialog: form with all fields
+      - New/Edit Category Dialog: name and color picker
+      - Delete Confirmation Dialog: with options for category deletion
+      - Stats Dashboard: modal or separate page with charts
+      - Keyboard Shortcuts Help: modal listing all shortcuts
+    </modals_dialogs>
+
+    <mobile_layout>
+      - Bottom navigation: Todos, Categories, Stats, Settings
+      - Floating action button for new todo
+      - Swipe actions on todo items (complete, delete)
+      - Pull to refresh
+      - Full-screen dialogs instead of modals
+    </mobile_layout>
+  </ui_layout>
+
+  <design_system>
+    <color_palette>
+      <light_mode>
+        - Background: white (#FFFFFF)
+        - Surface: light gray (#F9FAFB)
+        - Border: gray (#E5E7EB)
+        - Text primary: near black (#111827)
+        - Text secondary: gray (#6B7280)
+        - Primary action: blue (#3B82F6)
+        - Success: green (#10B981)
+        - Warning: amber (#F59E0B)
+        - Danger: red (#EF4444)
+      </light_mode>
+      <dark_mode>
+        - Background: dark (#0F172A)
+        - Surface: dark gray (#1E293B)
+        - Border: gray (#334155)
+        - Text primary: off-white (#F1F5F9)
+        - Text secondary: gray (#94A3B8)
+        - Primary action: blue (#60A5FA)
+        - Success: green (#34D399)
+        - Warning: amber (#FBBF24)
+        - Danger: red (#F87171)
+      </dark_mode>
+      <priority_colors>
+        - Low: gray (#6B7280)
+        - Medium: blue (#3B82F6)
+        - High: amber (#F59E0B)
+        - Urgent: red (#EF4444)
+      </priority_colors>
+      <category_colors>
+        - Preset palette: 8 colors for user selection
+        - Blue (#3B82F6), Green (#10B981), Purple (#8B5CF6), Pink (#EC4899)
+        - Orange (#F97316), Teal (#14B8A6), Indigo (#6366F1), Rose (#F43F5E)
+      </category_colors>
+    </color_palette>
+
+    <typography>
+      - Font family: system font stack (Inter if available)
+      - Headings: font-semibold, tracking-tight
+      - Body: font-normal, text-base (16px)
+      - Small text: text-sm (14px)
+      - Line height: relaxed for readability
+    </typography>
+
+    <components>
+      <todo_item>
+        - Rounded card with subtle border or shadow
+        - Checkbox on left (custom styled, not browser default)
+        - Title with strikethrough when completed
+        - Priority badge (colored pill)
+        - Due date with icon (red if overdue)
+        - Category tag (small colored badge)
+        - Hover state reveals actions
+        - Completed items have reduced opacity
+      </todo_item>
+
+      <category_item>
+        - Color dot indicator
+        - Category name
+        - Todo count badge
+        - Hover reveals edit/delete icons
+        - Active state with background highlight
+      </category_item>
+
+      <buttons>
+        - Primary: solid fill, brand color
+        - Secondary: outline style
+        - Ghost: no background, hover reveals
+        - Icon buttons: square with rounded corners
+        - Consistent padding and sizing (h-9, h-10)
+      </buttons>
+
+      <inputs>
+        - Rounded borders (rounded-md)
+        - Focus ring in brand color
+        - Placeholder text in gray
+        - Error state with red border
+        - Consistent height (h-10)
+      </inputs>
+
+      <badges>
+        - Small rounded pills
+        - Color variants for priority
+        - Subtle background with matching text color
+      </badges>
+    </components>
+
+    <animations>
+      - Transitions: 150ms ease for hover states
+      - List animations: items slide in when added
+      - Checkbox: scale and color transition on check
+      - Modal: fade and scale up on open
+      - Toast: slide in from top or bottom
+      - Loading: subtle pulse on skeletons
+      - Respect prefers-reduced-motion
+    </animations>
+
+    <spacing>
+      - Consistent spacing scale (4, 8, 12, 16, 24, 32px)
+      - Card padding: p-4 or p-6
+      - List item gap: gap-2 or gap-3
+      - Section margins: my-6 or my-8
+    </spacing>
+  </design_system>
+
+  <key_interactions>
+    <create_todo_flow>
+      1. User clicks "New Todo" button or presses 'n' key
+      2. Dialog opens with form (title focused)
+      3. User enters title (required)
+      4. Optional: add description, select priority, pick due date, choose category
+      5. User clicks "Create" or presses Enter
+      6. Todo appears in list with optimistic update
+      7. Toast confirms creation
+      8. Dialog closes
+    </create_todo_flow>
+
+    <complete_todo_flow>
+      1. User clicks checkbox on todo item
+      2. Checkbox animates to checked state
+      3. Optimistic update: todo shows as completed (strikethrough)
+      4. API call fires in background
+      5. Success: stats updated
+      6. Error: revert checkbox, show error toast
+    </complete_todo_flow>
+
+    <filter_flow>
+      1. User selects filter from dropdown (e.g., "High" priority)
+      2. URL updates with filter params
+      3. Todo list filters immediately (client-side if data loaded)
+      4. Or: loading state while fetching filtered results
+      5. Empty state shown if no matches
+      6. "Clear filters" option visible when filters active
+    </filter_flow>
+
+    <category_management_flow>
+      1. User clicks "Add Category" in sidebar
+      2. Dialog opens with name input and color picker
+      3. User enters name, selects color
+      4. User clicks "Create"
+      5. Category appears in sidebar
+      6. When deleting: confirmation dialog with options
+      7. Option A: Move todos to Inbox
+      8. Option B: Delete all todos in category
+    </category_management_flow>
+
+    <drag_reorder_flow>
+      1. User grabs drag handle on todo item
+      2. Item lifts with shadow effect
+      3. User drags to new position
+      4. Drop zones highlight as valid targets
+      5. User releases
+      6. Items reorder optimistically
+      7. API call updates positions in batch
+    </drag_reorder_flow>
+
+    <search_flow>
+      1. User clicks search input or presses '/' key
+      2. Search input focuses
+      3. User types query
+      4. Debounce 300ms before filtering
+      5. Results filter in real-time
+      6. Matching text highlighted in results (optional)
+      7. Escape clears search and restores focus
+    </search_flow>
+  </key_interactions>
+
+  <implementation_steps>
+    <step number="1">
+      <title>Project Setup and Database Schema</title>
+      <tasks>
+        - Initialize project with better-t-stack CLI command
+        - Configure Turborepo and workspace dependencies
+        - Set up Drizzle schema for todos, categories, daily_stats tables
+        - Create indexes for efficient queries
+        - Run initial migration to create database
+        - Seed default "Inbox" category
+        - Verify database connection works
+        - Configure Biome for linting and formatting
+      </tasks>
+    </step>
+
+    <step number="2">
+      <title>Basic Todo CRUD API</title>
+      <tasks>
+        - Create todo router in packages/api/src/routers/todo.ts
+        - Implement todo.getAll with basic query
+        - Implement todo.create with Zod validation
+        - Implement todo.update for partial updates
+        - Implement todo.delete
+        - Implement todo.toggle for completion
+        - Test all endpoints via API client
+        - Add proper error handling
+      </tasks>
+    </step>
+
+    <step number="3">
+      <title>Todo List UI - Basic Display</title>
+      <tasks>
+        - Set up oRPC client in apps/web/src/utils
+        - Configure TanStack Query provider
+        - Create TodoList component
+        - Create TodoItem component with checkbox, title, actions
+        - Display todos from API using useQuery
+        - Add loading skeleton state
+        - Add empty state component
+        - Style with Tailwind and shadcn/ui components
+      </tasks>
+    </step>
+
+    <step number="4">
+      <title>Create and Delete Todos</title>
+      <tasks>
+        - Create NewTodoDialog component with form
+        - Add title input with validation
+        - Implement useMutation for creating todos
+        - Add optimistic updates
+        - Create delete confirmation dialog
+        - Implement delete mutation
+        - Add toast notifications for actions
+        - Handle loading and error states
+      </tasks>
+    </step>
+
+    <step number="5">
+      <title>Toggle Completion and Edit</title>
+      <tasks>
+        - Wire up checkbox to toggle mutation
+        - Add optimistic update for instant feedback
+        - Style completed todos (strikethrough, opacity)
+        - Create EditTodoDialog component
+        - Implement inline editing (optional)
+        - Add update mutation
+        - Test all edit scenarios
+      </tasks>
+    </step>
+
+    <step number="6">
+      <title>Categories Implementation</title>
+      <tasks>
+        - Create category router in packages/api/src/routers/category.ts
+        - Implement category CRUD endpoints
+        - Create Sidebar component with category list
+        - Create NewCategoryDialog with color picker
+        - Display todo counts per category
+        - Implement category filtering (update todo.getAll)
+        - Add category selection to todo create/edit forms
+        - Handle category deletion with todos migration
+      </tasks>
+    </step>
+
+    <step number="7">
+      <title>Filtering and Search</title>
+      <tasks>
+        - Add filter parameters to todo.getAll endpoint
+        - Create FilterBar component with dropdowns
+        - Implement status filter (all, active, completed)
+        - Implement priority filter
+        - Implement due date filter (today, upcoming, overdue)
+        - Add search input with debouncing
+        - Implement sort options
+        - Persist filters in URL params
+        - Add "clear filters" functionality
+      </tasks>
+    </step>
+
+    <step number="8">
+      <title>Due Dates and Priorities</title>
+      <tasks>
+        - Add DatePicker component (shadcn/ui Calendar)
+        - Integrate due date in todo form
+        - Display due dates with relative formatting ("Today", "Tomorrow", etc.)
+        - Highlight overdue items in red
+        - Add priority selector to todo form
+        - Create priority badge component
+        - Color-code priority badges
+        - Sort by priority option
+      </tasks>
+    </step>
+
+    <step number="9">
+      <title>Statistics Dashboard</title>
+      <tasks>
+        - Create stats router in packages/api/src/routers/stats.ts
+        - Implement getDashboard endpoint (totals, by priority, by category, overdue count)
+        - Create daily_stats update logic on completion
+        - Implement getWeekly for chart data
+        - Create Dashboard page or modal
+        - Display total, completed, pending counts
+        - Add category breakdown
+        - Add priority distribution
+        - Create simple weekly completion chart
+        - Show productivity metrics
+      </tasks>
+    </step>
+
+    <step number="10">
+      <title>Polish and Advanced Features</title>
+      <tasks>
+        - Implement dark/light theme toggle
+        - Add keyboard shortcuts (n, /, Escape)
+        - Implement drag-and-drop reordering
+        - Add bulk actions (complete all, delete completed)
+        - Make design fully responsive
+        - Test on mobile viewports
+        - Add animations and transitions
+        - Implement accessibility features (ARIA, focus management)
+        - Run Biome and fix all lint errors
+        - Final testing of all features
+      </tasks>
+    </step>
+  </implementation_steps>
+
+  <success_criteria>
+    <functionality>
+      - All CRUD operations work correctly for todos and categories
+      - Data persists in SQLite database between sessions
+      - Toggle completion updates todo state correctly
+      - All filters work correctly (status, priority, category, due date, search)
+      - Sort options order todos correctly
+      - Categories can be created, edited, and deleted
+      - Statistics dashboard shows accurate data
+      - Drag-and-drop reordering works
+      - Bulk actions work correctly
+    </functionality>
+
+    <user_experience>
+      - Interface is intuitive and easy to navigate
+      - Responsive design works on all screen sizes
+      - Loading states provide feedback during async operations
+      - Empty states guide users on what to do
+      - Toast notifications confirm all actions
+      - Keyboard shortcuts work as documented
+      - Theme toggle works and persists preference
+    </user_experience>
+
+    <technical_quality>
+      - Type-safe from database to frontend (no TypeScript errors)
+      - Biome passes with no errors (lint and format)
+      - No console errors in browser
+      - API calls are properly typed with oRPC
+      - TanStack Query properly manages cache and refetching
+      - Optimistic updates provide instant feedback
+      - Error handling covers edge cases
+    </technical_quality>
+
+    <performance>
+      - Initial page load under 2 seconds
+      - Filter/search operations feel instant
+      - No UI jank during animations
+      - Optimistic updates make actions feel immediate
+      - Database queries are efficient with proper indexes
+    </performance>
+
+    <design_polish>
+      - Consistent spacing and typography
+      - Color scheme is cohesive in both themes
+      - Interactive elements have clear hover/focus states
+      - Animations are smooth and purposeful
+      - Mobile experience is fully usable
+      - Accessibility standards met (keyboard nav, ARIA)
+    </design_polish>
+  </success_criteria>
+</project_specification>
