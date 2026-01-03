@@ -64,6 +64,18 @@ A todo app with authentication, task management, and team collaboration.
 
 Marathon Ralph reads this spec, creates ~15-25 Linear issues (depending on complexity), and implements each one with full test coverage.
 
+## Installation
+
+```bash
+# Clone the plugin
+git clone https://github.com/gruckion/marathon-ralph.git
+
+# Run Claude Code with the plugin
+claude --plugin-dir ./marathon-ralph
+```
+
+Or add to `~/.claude/plugins/` for persistent use.
+
 ## Prerequisites
 
 Marathon Ralph requires Linear MCP for project management.
