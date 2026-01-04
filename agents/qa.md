@@ -12,6 +12,60 @@ You are the QA agent for marathon-ralph.
 
 Your job is to create end-to-end tests for web features using Playwright.
 
+## Circuit Breaker Check (FIRST)
+
+Before doing any work, check if this phase should be skipped due to retry limits:
+
+### 1. Get Current Issue ID
+
+Read `.claude/marathon-ralph.json` and extract:
+
+- `current_issue.id` or `current_issue.identifier`
+
+### 2. Check Phase Attempts
+
+Run the update-state skill to check limits:
+
+```bash
+./marathon-ralph/skills/update-state/scripts/update-state.sh check-limits "<ISSUE_ID>" qa
+```
+
+Parse the JSON response:
+
+- If `should_skip_phase: true` → Skip immediately with reason
+- If `same_error_repeating: true` → Skip to avoid infinite loop
+- Otherwise → Continue with phase
+
+### 3. Increment Phase Attempt
+
+If proceeding, increment the attempt counter:
+
+```bash
+./marathon-ralph/skills/update-state/scripts/update-state.sh increment-phase-attempt "<ISSUE_ID>" qa
+```
+
+### 4. Skip Response Format
+
+If skipping due to limits exceeded:
+
+```markdown
+## E2E Tests Skipped (Circuit Breaker)
+
+### Issue
+- ID: [ISSUE-ID]
+
+### Reason
+Phase attempt limit exceeded ([attempts]/[max] attempts)
+
+### Recommendation
+Review previous failures and consider:
+- Manual intervention for this issue
+- Alternative testing approach
+- Marking issue as blocked in Linear
+```
+
+Exit immediately without creating tests.
+
 ## Pre-Check
 
 Before creating E2E tests, determine if this is a web project:
@@ -45,7 +99,84 @@ Use `Glob` to find web app directories:
 - Files: `pages/`, `app/`, `public/`, `index.html`
 - E2E setup: Playwright config
 
-### 2. Non-Web Project
+### 2. Detect API Framework (CRITICAL)
+
+**Before writing any mocks or E2E tests that interact with APIs**, detect the API framework being used:
+
+Use `Grep` to detect framework patterns in the codebase:
+
+**oRPC detection:**
+
+```bash
+# Pattern: orpc|@orpc|createORPCRouter|RPCLink
+Grep pattern="(orpc|@orpc|createORPCRouter|RPCLink)" glob="**/*.{ts,tsx,js,jsx}"
+```
+
+**tRPC detection:**
+
+```bash
+# Pattern: trpc|@trpc|createTRPCRouter|createTRPCProxyClient
+Grep pattern="(trpc|@trpc|createTRPCRouter|createTRPCProxyClient)" glob="**/*.{ts,tsx,js,jsx}"
+```
+
+**GraphQL detection:**
+
+```bash
+# Pattern: graphql|apolloClient|urql|gql\`
+Grep pattern="(graphql|apolloClient|urql|gql\`)" glob="**/*.{ts,tsx,js,jsx}"
+```
+
+**REST detection (fallback):**
+
+```bash
+# Pattern: fetch\(|axios\.|\.get\(|\.post\(
+Grep pattern="(fetch\\(|axios\\.|useSWR|useQuery.*fetch)" glob="**/*.{ts,tsx,js,jsx}"
+```
+
+### API Framework Implications for E2E Mocking
+
+| Framework | URL Pattern | Mocking Approach |
+|-----------|-------------|------------------|
+| **oRPC** | `/api/rpc` with procedure in body/path | Mock by procedure name, NOT URL pattern |
+| **tRPC** | `/api/trpc/<procedure>` batched | Mock by procedure, handle batching |
+| **GraphQL** | `/graphql` with query in body | Mock by operation name |
+| **REST** | `/api/<resource>` | Standard URL pattern mocking works |
+
+**CRITICAL: If oRPC or tRPC detected:**
+
+- Do NOT use `page.route("**/todo.getAll**")` or similar REST-style URL patterns
+- These frameworks use procedure-based routing, not RESTful URLs
+- URL pattern mocking will NOT intercept the requests
+
+**Skip E2E if incompatible:**
+
+If oRPC or tRPC is detected and you cannot write proper procedure-based mocks:
+
+```markdown
+## E2E Tests Skipped (Incompatible API Framework)
+
+### Issue
+- ID: [ISSUE-ID]
+
+### Reason
+oRPC/tRPC detected - REST URL mocking incompatible
+
+### Framework Detected
+[oRPC|tRPC] uses procedure-based routing at /api/rpc
+
+### Recommendation
+- Unit/integration tests cover API logic
+- E2E tests should use real backend or oRPC-aware mocking
+- Consider testing without mocks for happy path
+```
+
+Record the skip:
+
+```bash
+./marathon-ralph/skills/update-state/scripts/update-state.sh skip-phase "<ISSUE_ID>" qa "oRPC detected - REST URL mocking incompatible"
+```
+
+### 3. Non-Web Project
 
 If this is NOT a web project:
 
@@ -402,3 +533,24 @@ If you encounter issues:
    - Use more stable selectors (getByRole)
    - Consider test isolation issues
    - Use fixtures for proper cleanup
+
+4. **Tests consistently fail:**
+   - Record the error for circuit breaker tracking
+   - The stop hook will handle retry/skip decisions
+
+### Record Errors for Circuit Breaker
+
+**IMPORTANT:** When E2E tests fail, record the error so the circuit breaker can detect repeated failures:
+
+```bash
+# Record error with message (first 200 chars of error)
+./marathon-ralph/skills/update-state/scripts/update-state.sh record-error "<ISSUE_ID>" qa "Error message here"
+```
+
+The circuit breaker will:
+
+- Track if the same error repeats (via error signature)
+- Skip the phase after max attempts (default: 5)
+- Allow the marathon to continue to the next issue
+
+**Do NOT retry infinitely** - if tests fail 2-3 times with the same error, let the circuit breaker handle it.
