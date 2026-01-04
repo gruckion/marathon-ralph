@@ -297,15 +297,21 @@ Use the Agent tool to run `marathon-code`:
 - The agent implements the feature
 - Creates a commit
 
-**If implementation fails:**
+**Handle agent response:**
 
-- Report the failure
-- Keep issue as "In Progress" for retry
-- Exit (user can retry by running /marathon-ralph:run again)
+Check the agent's response for status:
 
-**If implementation succeeds:**
+- **"success"** → Proceed to step 7.5 (test-agent)
+- **"skipped" (circuit breaker)** → Log skip, record in state using `skip-phase`, proceed to step 7.5
+- **"failure"** → Report failure, exit (stop hook will handle retry or skip based on limits)
 
-- Proceed to step 7.5 (test-agent)
+**If implementation was skipped:**
+
+```bash
+./marathon-ralph/skills/update-state/scripts/update-state.sh skip-phase "<ISSUE_ID>" code "<reason>"
+```
+
+Proceed to step 7.5 (test-agent) - skipped phases do not block issue progression.
 
 #### 7.5: Run Test Agent
 
@@ -318,15 +324,21 @@ Use the Agent tool to run `marathon-test`:
 - Writes integration tests if applicable
 - Creates a commit with the tests
 
-**If test writing fails:**
+**Handle agent response:**
 
-- Report the failure
-- Keep issue as "In Progress" for retry
-- Exit (user can retry)
+Check the agent's response for status:
 
-**If tests pass:**
+- **"success"** → Proceed to step 7.6 (qa-agent)
+- **"skipped" (circuit breaker)** → Log skip, record in state using `skip-phase`, proceed to step 7.6
+- **"failure"** → Report failure, exit (stop hook will handle retry or skip based on limits)
 
-- Proceed to step 7.6 (qa-agent)
+**If test writing was skipped:**
+
+```bash
+./marathon-ralph/skills/update-state/scripts/update-state.sh skip-phase "<ISSUE_ID>" test "<reason>"
+```
+
+Proceed to step 7.6 (qa-agent) - skipped phases do not block issue progression.
 
 #### 7.6: Run QA Agent
 
@@ -339,15 +351,25 @@ Use the Agent tool to run `marathon-qa`:
 - If web project: Creates E2E tests for the feature
 - Creates a commit with E2E tests (if applicable)
 
-**If E2E tests fail:**
+**Handle agent response:**
 
-- Report the failure
-- Keep issue as "In Progress" for retry
-- Exit (user can retry)
+Check the agent's response for status:
 
-**If E2E tests pass (or skipped for non-web):**
+- **"success"** → Proceed to step 7.7 (Exit Agent)
+- **"skipped" (non-web, circuit breaker, or incompatible framework)** → Log skip, record in state if not already recorded, proceed to step 7.7
+- **"failure"** → Report failure, exit (stop hook will handle retry or skip based on limits)
 
-- Proceed to step 7.7 (Exit Agent)
+**If QA was skipped:**
+
+The QA agent may skip for several reasons:
+
+- Not a web project (normal skip, no action needed)
+- Circuit breaker (phase attempt limit exceeded)
+- Incompatible framework (oRPC/tRPC detected)
+
+For circuit breaker or framework skips, the agent will have already recorded the skip using `skip-phase`.
+
+Proceed to step 7.7 (Exit Agent) - skipped phases do not block issue progression.
 
 #### 7.7: Run Exit Agent
 
@@ -362,13 +384,15 @@ Pass the following context:
 - `issue_title`: The issue title
 - `commits`: List of commits made during this cycle
 - `meta_issue_id`: The META issue ID from state file
+- `skipped_phases`: List of phases that were skipped (from state file)
 
 The exit agent will:
 
 1. Mark the issue as "Done" in Linear
 2. Update the state file using `update-state` skill (programmatic jq update)
-3. Add a session note to the META issue
+3. Add a session note to the META issue (including any skipped phases)
 4. Report progress summary
+5. Reset failure tracking for successful completion using `reset-on-success`
 
 **DO NOT manually update the state file or Linear issue status.** The exit agent handles this.
 

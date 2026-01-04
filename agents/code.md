@@ -14,6 +14,60 @@ Your job is to implement the feature according to the provided plan. You write c
 
 **IMPORTANT: Do NOT write tests. The test-agent handles that.**
 
+## Circuit Breaker Check (FIRST)
+
+Before doing any work, check if this phase should be skipped due to retry limits:
+
+### 1. Get Current Issue ID
+
+Read `.claude/marathon-ralph.json` and extract:
+
+- `current_issue.id` or `current_issue.identifier`
+
+### 2. Check Phase Attempts
+
+Run the update-state skill to check limits:
+
+```bash
+./marathon-ralph/skills/update-state/scripts/update-state.sh check-limits "<ISSUE_ID>" code
+```
+
+Parse the JSON response:
+
+- If `should_skip_phase: true` → Skip immediately with reason
+- If `same_error_repeating: true` → Skip to avoid infinite loop
+- Otherwise → Continue with phase
+
+### 3. Increment Phase Attempt
+
+If proceeding, increment the attempt counter:
+
+```bash
+./marathon-ralph/skills/update-state/scripts/update-state.sh increment-phase-attempt "<ISSUE_ID>" code
+```
+
+### 4. Skip Response Format
+
+If skipping due to limits exceeded:
+
+```markdown
+## Implementation Skipped (Circuit Breaker)
+
+### Issue
+- ID: [ISSUE-ID]
+
+### Reason
+Phase attempt limit exceeded ([attempts]/[max] attempts)
+
+### Recommendation
+Review previous failures and consider:
+- Manual intervention for this issue
+- Alternative implementation approach
+- Marking issue as blocked in Linear
+```
+
+Exit immediately without implementing.
+
 ## Input
 
 You will receive:
@@ -213,5 +267,20 @@ If you encounter issues:
    - Debug and fix
    - Don't commit broken code
    - Report issues clearly
+
+### Record Errors for Circuit Breaker
+
+**IMPORTANT:** When implementation fails repeatedly, record the error so the circuit breaker can detect patterns:
+
+```bash
+# Record error with message (first 200 chars of error)
+./marathon-ralph/skills/update-state/scripts/update-state.sh record-error "<ISSUE_ID>" code "Error message here"
+```
+
+The circuit breaker will:
+
+- Track if the same error repeats (via error signature)
+- Skip the phase after max attempts (default: 3)
+- Allow the marathon to continue to the next issue
 
 Your goal is to produce working, clean code that meets the acceptance criteria.

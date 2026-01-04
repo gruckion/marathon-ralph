@@ -25,6 +25,7 @@ You will receive:
 - `issue_title`: The issue title
 - `commits`: List of commit hashes/messages from this cycle
 - `meta_issue_id`: The META issue ID for session notes
+- `skipped_phases`: List of phases that were skipped (if any)
 
 ## Process
 
@@ -39,6 +40,16 @@ Extract:
 - `stats.completed` - current completed count
 - `stats.todo` - current todo count
 - `linear.project_name` - for reporting
+
+### Step 1.5: Get Skipped Phases (if any)
+
+If skipped_phases was not passed as context, read from state file:
+
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/skills/update-state/scripts/update-state.sh" get-skipped-phases "<issue_id>"
+```
+
+This returns a JSON array of skipped phases with reasons.
 
 ### Step 2: Update Linear Issue to Done
 
@@ -87,11 +98,41 @@ Session note format:
 - COMMIT_HASH: message
 - COMMIT_HASH: message
 
+### Skipped Phases (if any)
+- **phase_name**: reason
+
 ### Progress
 X/Y issues completed
 ```
 
-### Step 5: Report Summary
+**If no phases were skipped**, omit the "Skipped Phases" section entirely.
+
+**If phases were skipped**, include them with the reason. Example:
+
+```markdown
+### Skipped Phases
+- **qa**: oRPC detected - REST URL mocking incompatible
+- **test**: max attempts (5/5) exceeded
+```
+
+### Step 5: Reset Failure Tracking
+
+On successful issue completion, reset the failure tracking counters:
+
+```bash
+bash "${CLAUDE_PLUGIN_ROOT}/skills/update-state/scripts/update-state.sh" reset-on-success
+```
+
+This:
+
+- Resets consecutive failure count to 0
+- Resets repeated error count to 0
+- Clears the last failure signature
+- Resets stop_hook_iterations to 0
+
+This ensures the next issue starts with a clean slate for failure tracking.
+
+### Step 6: Report Summary
 
 Output a brief summary:
 
@@ -99,6 +140,8 @@ Output a brief summary:
 Issue Complete: [IDENTIFIER] TITLE
 
 Progress: X/Y issues done (Z remaining)
+
+[Skipped phases: phase1 (reason), phase2 (reason)]  ← Only if phases were skipped
 
 [Stop hook will continue with next issue]
 ```

@@ -60,7 +60,7 @@ fi
 
 # Check iteration safety limit to prevent infinite loops
 ITERATIONS=$(jq -r '.stop_hook_iterations // 0' "$STATE_FILE" 2>/dev/null || echo "0")
-MAX_ITERATIONS=100
+MAX_ITERATIONS=25  # Reduced from 100 for faster failure detection
 
 # Validate iterations is a number
 if ! [[ "$ITERATIONS" =~ ^[0-9]+$ ]]; then
@@ -72,10 +72,64 @@ if [ "$ITERATIONS" -ge "$MAX_ITERATIONS" ]; then
   cat << 'EOF'
 {
   "decision": "allow",
-  "reason": "Max iterations (100) reached. Marathon paused for safety. Resume with /marathon-ralph:run"
+  "reason": "Max iterations (25) reached. Marathon paused for safety. Resume with /marathon-ralph:run"
 }
 EOF
   exit 0
+fi
+
+# Get current issue for failure tracking
+CURRENT_ISSUE_ID=$(jq -r '.current_issue.id // .current_issue.identifier // empty' "$STATE_FILE" 2>/dev/null || echo "")
+
+# Check failure limits if we have a current issue
+if [ -n "$CURRENT_ISSUE_ID" ]; then
+  # Get script directory for update-state.sh
+  SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+  UPDATE_STATE="$SCRIPT_DIR/../skills/update-state/scripts/update-state.sh"
+
+  if [ -x "$UPDATE_STATE" ]; then
+    # Check limits
+    LIMITS_CHECK=$("$UPDATE_STATE" check-limits "$CURRENT_ISSUE_ID" 2>/dev/null || echo "{}")
+
+    # Parse limit check results
+    SHOULD_ABORT=$(echo "$LIMITS_CHECK" | jq -r '.should_abort // false' 2>/dev/null || echo "false")
+    SHOULD_SKIP_ISSUE=$(echo "$LIMITS_CHECK" | jq -r '.should_skip_issue // false' 2>/dev/null || echo "false")
+    SAME_ERROR_REPEATING=$(echo "$LIMITS_CHECK" | jq -r '.same_error_repeating // false' 2>/dev/null || echo "false")
+
+    if [ "$SHOULD_ABORT" = "true" ]; then
+      # Too many consecutive failures - abort marathon
+      ABORT_REASON=$(echo "$LIMITS_CHECK" | jq -r '.abort_reason // "too many failures"' 2>/dev/null)
+      cat << EOF
+{
+  "decision": "allow",
+  "reason": "Marathon aborted: $ABORT_REASON. Review errors and resume with /marathon-ralph:run"
+}
+EOF
+      # Mark marathon complete to stop further attempts
+      "$UPDATE_STATE" mark-complete 2>/dev/null || true
+      exit 0
+    fi
+
+    if [ "$SHOULD_SKIP_ISSUE" = "true" ] || [ "$SAME_ERROR_REPEATING" = "true" ]; then
+      # Skip this issue and continue to next
+      SKIP_REASON="max attempts exceeded"
+      if [ "$SAME_ERROR_REPEATING" = "true" ]; then
+        SKIP_REASON="same error repeating (stuck in loop)"
+      fi
+
+      # Mark issue as skipped in state
+      "$UPDATE_STATE" skip-issue "$CURRENT_ISSUE_ID" "$SKIP_REASON" 2>/dev/null || true
+
+      # Continue to next issue - modify the block message
+      cat << EOF
+{
+  "decision": "block",
+  "reason": "Issue $CURRENT_ISSUE_ID skipped: $SKIP_REASON. Continue to next issue:\n\n1. Read state file for project context\n2. Query Linear for next Todo issue\n3. If no issues remain, complete marathon\n4. If issues remain, continue with verify-plan-code-test-qa loop"
+}
+EOF
+      exit 0
+    fi
+  fi
 fi
 
 # Increment iteration count in state file
