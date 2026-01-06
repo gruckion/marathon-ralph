@@ -17,17 +17,19 @@ Building a full application requires managing dozens of tasks, maintaining quali
 
 ## Installation
 
-1. Run `/plugin` in Claude Code
-2. Go to **Marketplaces** tab
-3. Select **+ Add Marketplace**
-4. Enter `gruckion/marathon-ralph`
-5. Go to **Discover** tab and install the plugin
+```bash
+# Add the marketplace
+claude plugin marketplace add gruckion/marathon-ralph
+
+# Install the plugin
+claude plugin install marathon-ralph
+```
 
 ## Quick Start
 
 ```bash
 # 1. Start a marathon from your spec file
-/marathon-ralph:run app_spec.md
+/marathon-ralph:run examples/todo_app_spec.md
 
 # 2. Check progress anytime
 /marathon-ralph:status
